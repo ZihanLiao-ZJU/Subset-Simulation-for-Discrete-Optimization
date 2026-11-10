@@ -2,6 +2,10 @@
 
 MATLAB implementations of single-objective and multiobjective subset simulation for bounded integers, subsets and permutations. Both methods use the same `SeMCS` engine and MCMC samplers as reliability estimation and Bayesian updating in the unified framework.
 
+The single-objective implementation is based on:
+
+> [A Strategy for Optimal Sensor Placement in Modal Signal-to-noise Ratio-based Structural Health Monitoring](https://ieeexplore.ieee.org/abstract/document/10042699/) (IEEE ICHCE 2022, pp. 955–962; [DOI: 10.1109/ICHCE57331.2022.10042699](https://doi.org/10.1109/ICHCE57331.2022.10042699)).
+
 ## Contents
 
 - [Overview](#overview)
@@ -11,7 +15,8 @@ MATLAB implementations of single-objective and multiobjective subset simulation 
 - [Built-in examples](#built-in-examples)
 - [Custom problems](#custom-problems)
 - [Outputs](#outputs)
-- [References and license](#references-and-license)
+- [Citation](#citation)
+- [License](#license)
 
 ## Overview
 
@@ -30,13 +35,19 @@ Here `z` is a discrete design, `f` contains one or more objectives, and `c` cont
 
 ## Repository structure
 
-- `drive_discrete.m` — choose a problem, configure a run and return the result.
-- `SuS_Discrete_Optim.m`, `SuS_Multi_Optim.m` — the single-objective and multiobjective ISDs.
-- `SeMCS.m` — the shared sequential sampling engine.
-- `MCMC-samplers/` — the shared sampling algorithms.
-- `Objective-functions/` — classical examples and QAPLIB instances.
-- `Support-Fun/` — discrete mappings and common framework support.
-- `Operations on Logarithmic values/` — logarithmic arithmetic helpers.
+```text
+.
+├── drive_discrete.m                     % choose a problem, configure a run and return the result
+├── SeMCS.m                              % the shared sequential sampling engine
+├── SuS_Discrete_Optim.m                 % the single-objective ISD
+├── SuS_Multi_Optim.m                    % the multiobjective ISD
+├── MCMC-samplers/                       % the shared sampling algorithms
+├── Objective-functions/                 % classical examples and QAPLIB instances
+├── Support-Fun/                         % discrete mappings and common framework support
+├── Operations on Logarithmic values/    % logarithmic arithmetic helpers
+├── LICENSE
+└── README.md
+```
 
 ## Quick start
 
@@ -114,10 +125,12 @@ The cache retains the first evaluation of each design; objectives should be dete
 
 For multiobjective problems, objectives and constraints at one new design count as one joint evaluation. The final archive includes evaluated proposals rejected by MCMC. `raw.x` contains Gaussian coordinates; `raw.intBay.u2ints(U)` maps them to discrete designs. The optimization driver does not perform evidence or failure-probability postprocessing.
 
-## References and license
+## Citation
 
 The original single-objective method is described in [A Strategy for Optimal Sensor Placement in Modal Signal-to-noise Ratio-based Structural Health Monitoring](https://ieeexplore.ieee.org/abstract/document/10042699/) (IEEE ICHCE 2022, pp. 955–962; [DOI: 10.1109/ICHCE57331.2022.10042699](https://doi.org/10.1109/ICHCE57331.2022.10042699)).
 
 QAP data follow [QAPLIB](https://coral.ise.lehigh.edu/data-sets/qaplib/). The grid multiobjective examples use the published [ZDT](https://sop.tik.ee.ethz.ch/publicationListFiles/zdt2000a.pdf) and [DTLZ](https://sop.tik.ee.ethz.ch/publicationListFiles/dtlz2002a.pdf) function definitions; LOTZ and COCZ follow [Laumanns, Thiele and Zitzler (2004)](https://sop.tik.ee.ethz.ch/publicationListFiles/ltz2004a.pdf). The small geometric and knapsack instances are self-contained constructed examples.
+
+## License
 
 Distributed under the [MIT License](LICENSE). Retained third-party notices are supplied with the corresponding support routines.
