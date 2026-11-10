@@ -51,11 +51,13 @@ Here `z` is a discrete design, `f` contains one or more objectives, and `c` cont
 
 ## Quick start
 
-Start a fresh MATLAB session in the repository root:
+Start a fresh MATLAB session in the repository root. Set a constant sample count and choose a sampler:
 
 ```matlab
-single = drive_discrete('nug20');
-multi = drive_discrete('grid_zdt1','Dimension',20,'Levels',21);
+NumSam = 512;
+Sampler = 'aCS';
+single = drive_discrete('nug20','NumSam',NumSam,'Sampler',Sampler);
+multi = drive_discrete('grid_zdt1','NumSam',NumSam,'Sampler',Sampler);
 
 single.solution
 single.metric
@@ -63,15 +65,7 @@ multi.solution
 multi.metric
 ```
 
-Choose a sampler and an explicit level budget:
-
-```matlab
-r = drive_discrete('grid_dtlz2','Dimension',20,'Levels',21, ...
-    'NumSam',512,'MaxIte',30,'ConPrb',0.1,'Seed',1, ...
-    'Sampler','CW_aMH');
-```
-
-Defaults are `nug20`, 512 samples per level, conditional probability 0.1, seed 1 and `aCS`. Omitting `MaxIte` retains the common engine's 10000-level cap. The native stopping rules usually stop earlier: scalar runs monitor the best evaluated objective; multiobjective runs monitor the distinct feasible nondominated objective vectors. `Patience` defaults to 5 and `MinimumLevels` to 3. These are search stopping rules, not certificates of global optimality or complete Pareto coverage.
+`NumSam` is the scalar nominal sample count per level; the method's stopping rule is applied automatically. The defaults are 512 and `aCS`.
 
 Available samplers are `aCS`, `CW_aMH`, `CW_SMS`, `ES_2pi`, `ES_pi` and `ES_SourceV3`. `ES_pi` is a compatibility entry for `ES_2pi`; `ES_SourceV3` preserves the separate coordinate-angle source kernel.
 
@@ -103,7 +97,6 @@ model.Nsam = 512;
 sampler = aCS;
 sampler.BayStc = model;
 simulation = SeMCS(sampler);
-simulation.MaxIte = 30;
 raw = simulation.RunIte();
 [bestValue,index] = min(raw.intBay.CacheF);
 bestDesign = raw.intBay.CacheZ(:,index);
@@ -114,6 +107,8 @@ An object or struct can instead provide `EvlF(Z)`; the original `EvlOBF(Z)` inte
 `Unique=true` enforces distinct coordinates. Use `PermutationInvariant=true` only for unordered designs whose objectives are unchanged by sorting and whose bounds are common. Permutations use `PermutationInvariant=false`, `Mapping='rank'` and common bounds `1:dimension`. `Mapping='uniform'` gives equal integer bins; `quantile` retains the original rounded Gaussian-CDF mapping. Direct scalar construction retains `StopRule='legacy'` unless stability is requested.
 
 The cache retains the first evaluation of each design; objectives should be deterministic or use explicitly fixed common random numbers.
+
+Optional controls in `drive_discrete` include `ConPrb` (default 0.1), `Seed` (1), `MaxIte`, `Patience` (5) and `MinimumLevels` (3). Omitting `MaxIte` retains the common engine's 10000-level cap. Native stopping monitors the best evaluated scalar objective or the distinct feasible nondominated objective vectors. These rules do not certify global optimality or complete Pareto coverage.
 
 ## Outputs
 
