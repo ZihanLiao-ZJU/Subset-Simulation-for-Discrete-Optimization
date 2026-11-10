@@ -2,9 +2,9 @@
 
 MATLAB implementations of single-objective and multiobjective subset simulation for bounded integers, subsets and permutations. Both methods use the same `SeMCS` engine and MCMC samplers as reliability estimation and Bayesian updating in the unified framework.
 
-The single-objective implementation is based on:
+This toolbox builds on the multiobjective subset simulation approach described in:
 
-> [A Strategy for Optimal Sensor Placement in Modal Signal-to-noise Ratio-based Structural Health Monitoring](https://ieeexplore.ieee.org/abstract/document/10042699/) (IEEE ICHCE 2022, pp. 955–962; [DOI: 10.1109/ICHCE57331.2022.10042699](https://doi.org/10.1109/ICHCE57331.2022.10042699)).
+> Xiao, D., Liao, Z., & Li, B. (2022). A strategy for optimal sensor placement in modal signal-to-noise ratio-based structural health monitoring. In *2022 8th International Conference on Hydraulic and Civil Engineering: Deep Space Intelligent Development and Utilization Forum (ICHCE)* (pp. 1–8). IEEE. [https://doi.org/10.1109/ICHCE57331.2022.10042699](https://doi.org/10.1109/ICHCE57331.2022.10042699)
 
 ## Contents
 
@@ -87,6 +87,8 @@ Available samplers are `aCS`, `CW_aMH`, `CW_SMS`, `ES_2pi`, `ES_pi` and `ES_Sour
 
 For grid examples, `Dimension` selects the number of variables and `Levels` the number of integer choices per variable. The provider maps these integer codes to the physical grid before evaluating the classical function. These are explicitly restricted-grid variants. Use odd `Levels`; Rosenbrock additionally requires `Levels-1` divisible by four. QAPLIB instances have fixed dimensions. Reference calculations in `Oracle()` are for external assessment and are not used by the optimizer.
 
+QAP data follow [QAPLIB](https://coral.ise.lehigh.edu/data-sets/qaplib/). The grid multiobjective examples use the published [ZDT](https://sop.tik.ee.ethz.ch/publicationListFiles/zdt2000a.pdf) and [DTLZ](https://sop.tik.ee.ethz.ch/publicationListFiles/dtlz2002a.pdf) function definitions; LOTZ and COCZ follow [Laumanns, Thiele and Zitzler (2004)](https://sop.tik.ee.ethz.ch/publicationListFiles/ltz2004a.pdf). The small geometric and knapsack instances are self-contained constructed examples.
+
 ## Custom problems
 
 Supply one design per column and return one objective value per column. For example:
@@ -127,9 +129,21 @@ For multiobjective problems, objectives and constraints at one new design count 
 
 ## Citation
 
-The original single-objective method is described in [A Strategy for Optimal Sensor Placement in Modal Signal-to-noise Ratio-based Structural Health Monitoring](https://ieeexplore.ieee.org/abstract/document/10042699/) (IEEE ICHCE 2022, pp. 955–962; [DOI: 10.1109/ICHCE57331.2022.10042699](https://doi.org/10.1109/ICHCE57331.2022.10042699)).
+If you use this toolbox in your research, please cite:
 
-QAP data follow [QAPLIB](https://coral.ise.lehigh.edu/data-sets/qaplib/). The grid multiobjective examples use the published [ZDT](https://sop.tik.ee.ethz.ch/publicationListFiles/zdt2000a.pdf) and [DTLZ](https://sop.tik.ee.ethz.ch/publicationListFiles/dtlz2002a.pdf) function definitions; LOTZ and COCZ follow [Laumanns, Thiele and Zitzler (2004)](https://sop.tik.ee.ethz.ch/publicationListFiles/ltz2004a.pdf). The small geometric and knapsack instances are self-contained constructed examples.
+> Xiao, D., Liao, Z., & Li, B. (2022). A strategy for optimal sensor placement in modal signal-to-noise ratio-based structural health monitoring. In *2022 8th International Conference on Hydraulic and Civil Engineering: Deep Space Intelligent Development and Utilization Forum (ICHCE)* (pp. 1–8). IEEE. [https://doi.org/10.1109/ICHCE57331.2022.10042699](https://doi.org/10.1109/ICHCE57331.2022.10042699)
+
+```bibtex
+@inproceedings{xiao2022strategy,
+  author    = {Xiao, Dahai and Liao, Zihan and Li, Binbin},
+  title     = {A Strategy for Optimal Sensor Placement in Modal Signal-to-noise Ratio-based Structural Health Monitoring},
+  booktitle = {2022 8th International Conference on Hydraulic and Civil Engineering: Deep Space Intelligent Development and Utilization Forum (ICHCE)},
+  year      = {2022},
+  pages     = {1--8},
+  publisher = {IEEE},
+  doi       = {10.1109/ICHCE57331.2022.10042699}
+}
+```
 
 ## License
 
