@@ -21,7 +21,7 @@ $$
 \min_{\boldsymbol z\in\mathcal D}\ \boldsymbol f(\boldsymbol z),\qquad \boldsymbol c(\boldsymbol z)\le\boldsymbol0.
 $$
 
-Here `z` is a discrete design, `f` contains one or more objectives, and `c` contains optional constraints. The algorithms sample standard-normal coordinates and map them to discrete designs. `SuS_Discrete_Optim` adapts objective thresholds; `SuS_Multi_opt` uses nondominated ranks against a reference set fixed within each level. Evaluated designs are cached, and the result is the best evaluated scalar design or a feasible nondominated archive.
+Here `z` is a discrete design, `f` contains one or more objectives, and `c` contains optional constraints. The algorithms sample standard-normal coordinates and map them to discrete designs. `SuS_Discrete_Optim` adapts objective thresholds; `SuS_Multi_Optim` uses nondominated ranks against a reference set fixed within each level. Evaluated designs are cached, and the result is the best evaluated scalar design or a feasible nondominated archive.
 
 ## Requirements
 
@@ -31,7 +31,7 @@ Here `z` is a discrete design, `f` contains one or more objectives, and `c` cont
 ## Repository structure
 
 - `drive_discrete.m` — choose a problem, configure a run and return the result.
-- `SuS_Discrete_Optim.m`, `SuS_Multi_opt.m` — the single-objective and multiobjective ISDs.
+- `SuS_Discrete_Optim.m`, `SuS_Multi_Optim.m` — the single-objective and multiobjective ISDs.
 - `SeMCS.m` — the shared sequential sampling engine.
 - `MCMC-samplers/` — the shared sampling algorithms.
 - `Objective-functions/` — classical examples and QAPLIB instances.
@@ -96,7 +96,7 @@ raw = simulation.RunIte();
 bestDesign = raw.intBay.CacheZ(:,index);
 ```
 
-An object or struct can instead provide `EvlF(Z)`; the original `EvlOBF(Z)` interface is also supported. For `SuS_Multi_opt`, return an objectives-by-designs matrix and declare `Nfun` as the objective count. A bare function handle can declare `ObjectiveCount` in the constructor. Constrained multiobjective providers additionally define `Ncst` and `EvlCST(Z)`, returning constraints-by-designs values feasible at `<=0`. Scalar constraints are encoded in an explicit finite penalty.
+An object or struct can instead provide `EvlF(Z)`; the original `EvlOBF(Z)` interface is also supported. For `SuS_Multi_Optim`, return an objectives-by-designs matrix and declare `Nfun` as the objective count. A bare function handle can declare `ObjectiveCount` in the constructor. Constrained multiobjective providers additionally define `Ncst` and `EvlCST(Z)`, returning constraints-by-designs values feasible at `<=0`. Scalar constraints are encoded in an explicit finite penalty.
 
 `Unique=true` enforces distinct coordinates. Use `PermutationInvariant=true` only for unordered designs whose objectives are unchanged by sorting and whose bounds are common. Permutations use `PermutationInvariant=false`, `Mapping='rank'` and common bounds `1:dimension`. `Mapping='uniform'` gives equal integer bins; `quantile` retains the original rounded Gaussian-CDF mapping. Direct scalar construction retains `StopRule='legacy'` unless stability is requested.
 

@@ -1,4 +1,4 @@
-classdef SuS_Multi_opt
+classdef SuS_Multi_Optim
     % Multiobjective discrete subset simulation in Gaussian sampling space.
     % Frozen-reference nondominated rank defines a pointwise indicator ISD.
     % Objectives are minimized; constraints, when supplied, satisfy C <= 0.
@@ -28,7 +28,7 @@ classdef SuS_Multi_opt
         TF
     end
     methods
-        function obj = SuS_Multi_opt(OBJ, xmin, xmax, varargin)
+        function obj = SuS_Multi_Optim(OBJ, xmin, xmax, varargin)
             options = inputParser;
             options.addParameter('Unique', []);
             options.addParameter('PermutationInvariant', []);

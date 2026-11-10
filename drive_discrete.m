@@ -46,7 +46,7 @@ end
 if problem.Nfun==1
     model=SuS_Discrete_Optim(problem,problem.Xmin,problem.Xmax,options{:},'StopRule','stability');
 else
-    model=SuS_Multi_opt(problem,problem.Xmin,problem.Xmax,options{:});
+    model=SuS_Multi_Optim(problem,problem.Xmin,problem.Xmax,options{:});
 end
 model.Nsam=opt.NumSam;model.G.p=opt.ConPrb;
 kernel=validatestring(char(opt.Sampler),{'aCS','CW_aMH','CW_SMS','ES_pi','ES_2pi','ES_SourceV3'});

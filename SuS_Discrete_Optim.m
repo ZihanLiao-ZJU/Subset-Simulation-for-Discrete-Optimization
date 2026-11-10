@@ -40,7 +40,7 @@ classdef SuS_Discrete_Optim
     %       simulation = SeMCS(sampler); simulation.MaxIte = 30;
     %       raw = simulation.RunIte;
     %
-    %   See also SUS_MULTI_OPT, SEMCS, DISCRETEMAP.
+    %   See also SUS_MULTI_OPTIM, SEMCS, DISCRETEMAP.
 
     properties
         OBJ                 % objective provider (handle / object / struct)
