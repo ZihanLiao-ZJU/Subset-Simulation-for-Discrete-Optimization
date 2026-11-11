@@ -1,6 +1,6 @@
 # Subset Simulation for Discrete Optimization
 
-MATLAB implementations of single-objective and multiobjective subset simulation for bounded integers, subsets and permutations. Both methods use the same `SeMCS` engine and MCMC samplers as reliability estimation and Bayesian updating in the unified framework.
+MATLAB implementations of single-objective and multiobjective subset simulation for bounded integers, subsets and permutations.
 
 This toolbox builds on the multiobjective subset simulation approach described in:
 
@@ -38,12 +38,12 @@ Here `z` is a discrete design, `f` contains one or more objectives, and `c` cont
 ```text
 .
 ├── drive_discrete.m                     % choose a problem, configure a run and return the result
-├── SeMCS.m                              % the shared sequential sampling engine
+├── SeMCS.m                              % the sequential sampling engine
 ├── SuS_Discrete_Optim.m                 % the single-objective ISD
 ├── SuS_Multi_Optim.m                    % the multiobjective ISD
-├── MCMC-samplers/                       % the shared sampling algorithms
+├── MCMC-samplers/                       % MCMC samplers
 ├── Objective-functions/                 % classical examples and QAPLIB instances
-├── Support-Fun/                         % discrete mappings and common framework support
+├── Support-Fun/                         % discrete mappings and numerical utilities
 ├── Operations on Logarithmic values/    % logarithmic arithmetic helpers
 ├── LICENSE
 └── README.md
@@ -108,7 +108,7 @@ An object or struct can instead provide `EvlF(Z)`; the original `EvlOBF(Z)` inte
 
 The cache retains the first evaluation of each design; objectives should be deterministic or use explicitly fixed common random numbers.
 
-Optional controls in `drive_discrete` include `ConPrb` (default 0.1), `Seed` (1), `MaxIte`, `Patience` (5) and `MinimumLevels` (3). Omitting `MaxIte` retains the common engine's 10000-level cap. Native stopping monitors the best evaluated scalar objective or the distinct feasible nondominated objective vectors. These rules do not certify global optimality or complete Pareto coverage.
+Optional controls in `drive_discrete` include `ConPrb` (default 0.1), `Seed` (1), `MaxIte`, `Patience` (5) and `MinimumLevels` (3). Omitting `MaxIte` retains the 10000-level cap. Native stopping monitors the best evaluated scalar objective or the distinct feasible nondominated objective vectors. These rules do not certify global optimality or complete Pareto coverage.
 
 ## Outputs
 
@@ -118,7 +118,7 @@ Optional controls in `drive_discrete` include `ConPrb` (default 0.1), `Seed` (1)
 | `evaluations` | Newly evaluated discrete designs; cached repeats add no calls |
 | `iterations`, `converged`, `stop_reason` | Sampled levels and native termination information |
 | `archive_solution`, `archive_objectives`, `archive_constraints` | All uniquely evaluated designs and their cached values |
-| `raw` | The shared SeMCS history and final ISD |
+| `raw` | Sampling history and final ISD |
 
 For multiobjective problems, objectives and constraints at one new design count as one joint evaluation. The final archive includes evaluated proposals rejected by MCMC. `raw.x` contains Gaussian coordinates; `raw.intBay.u2ints(U)` maps them to discrete designs. The optimization driver does not perform evidence or failure-probability postprocessing.
 
