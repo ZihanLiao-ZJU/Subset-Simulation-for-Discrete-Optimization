@@ -37,7 +37,7 @@ Here `z` is a discrete design, `f` contains one or more objectives, and `c` cont
 
 ```text
 .
-├── drive_discrete.m                     % choose a problem, configure a run and return the result
+├── drive_discrete.m                     % problem, model, sampler, simulation and results
 ├── SeMCS.m                              % the sequential sampling engine
 ├── SuS_Discrete_Optim.m                 % the single-objective ISD
 ├── SuS_Multi_Optim.m                    % the multiobjective ISD
@@ -51,23 +51,19 @@ Here `z` is a discrete design, `f` contains one or more objectives, and `c` cont
 
 ## Quick start
 
-Start a fresh MATLAB session in the repository root. Set a constant sample count and choose a sampler:
+Add this repository and all its subfolders to the MATLAB path. Edit `drive_discrete.m` directly: select `problem`, construct the optimization model, choose `SamplerClass`, and set the scalar `model.Nsam`.
+
+The default is QAPLIB `nug20`, `SuS_Discrete_Optim`, 512 samples per level and `aCS`. Run the script:
 
 ```matlab
-NumSam = 512;
-Sampler = 'aCS';
-single = drive_discrete('nug20','NumSam',NumSam,'Sampler',Sampler);
-multi = drive_discrete('grid_zdt1','NumSam',NumSam,'Sampler',Sampler);
-
-single.solution
-single.metric
-multi.solution
-multi.metric
+drive_discrete
+result.solution
+result.metric
 ```
 
-`NumSam` is the scalar nominal sample count per level; the method's stopping rule is applied automatically. The defaults are 512 and `aCS`.
+For a multiobjective example, select a provider such as `DiscreteBenchmarks('grid_zdt1','Dimension',20,'Levels',21)`, use the commented `SuS_Multi_Optim` construction, and replace the scalar extraction block with the adjacent Pareto-archive extraction. The script marks both sections to change.
 
-Available samplers are `aCS`, `CW_aMH`, `CW_SMS`, `ES_2pi`, `ES_pi` and `ES_SourceV3`. `ES_pi` is a compatibility entry for `ES_2pi`; `ES_SourceV3` preserves the separate coordinate-angle source kernel.
+Available samplers are `aCS`, `CW_aMH`, `CW_SMS`, `ES_2pi`, `ES_pi` and `ES_SourceV3`.
 
 ## Built-in examples
 
@@ -88,7 +84,6 @@ QAP data follow [QAPLIB](https://coral.ise.lehigh.edu/data-sets/qaplib/). The gr
 Supply one design per column and return one objective value per column. For example:
 
 ```matlab
-addpath(genpath(pwd));
 objective = @(Z) sum((Z-3).^2,1);
 model = SuS_Discrete_Optim(objective,zeros(20,1),6*ones(20,1), ...
     'Unique',false,'PermutationInvariant',false, ...
@@ -108,7 +103,7 @@ An object or struct can instead provide `EvlF(Z)`; the original `EvlOBF(Z)` inte
 
 The cache retains the first evaluation of each design; objectives should be deterministic or use explicitly fixed common random numbers.
 
-Optional controls in `drive_discrete` include `ConPrb` (default 0.1), `Seed` (1), `MaxIte`, `Patience` (5) and `MinimumLevels` (3). Omitting `MaxIte` retains the 10000-level cap. Native stopping monitors the best evaluated scalar objective or the distinct feasible nondominated objective vectors. These rules do not certify global optimality or complete Pareto coverage.
+The script sets `model.G.p = 0.1` and `simulation.MaxIte = 10000`. The model constructors accept `Patience` (default 5) and `MinimumLevels` (3) when needed. Native stopping monitors the best evaluated scalar objective or the distinct feasible nondominated objective vectors. These rules do not certify global optimality or complete Pareto coverage.
 
 ## Outputs
 
