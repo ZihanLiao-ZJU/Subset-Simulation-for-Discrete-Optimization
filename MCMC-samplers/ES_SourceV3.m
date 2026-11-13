@@ -1,4 +1,4 @@
-classdef ES_SourceV3
+classdef ES_SourceV3 < MCMCBase
     % Source Bayesian src v3 legacy coordinate-angle slice sampler.
     % Each coordinate draws its own angle on [0,pi]. This is NOT the
     % common-angle elliptical slice kernel implemented by ES_2pi.
@@ -6,64 +6,26 @@ classdef ES_SourceV3
     % Only a standard Gaussian reference in U is supported. No aCS scale,
     % lambda carry, score adaptation or ragged chain lengths are applicable.
     properties (Constant)
-        SedSav = false
         Ntry = 20
-    end
-    properties
-        BayStc
     end
     methods
         function obj = ES_SourceV3(baystc)
-            if nargin>0, obj.BayStc=baystc; end
-        end
-
-        function obj = ConfigureISDPolicy(obj,defaults)
-            % SeMCS validates all legal policy names and values first. Both
-            % kernels support the same move-only, non-aCS capability policy.
-            checker=ES_2pi;
-            checker.ConfigureISDPolicy(defaults);
+            if nargin < 1, baystc = []; end
+            obj@MCMCBase(baystc);
         end
 
         function [u,y,Ncal,baystc] = SamGen(obj,varargin)
-            % Seeded use moves each seed. The source unseeded overload
-            % SamGen(Nc,Ns) includes its generated initial states in slot 1.
-            if numel(varargin)~=2 && numel(varargin)~=3
-                error('SeMIS:SamplerArguments','Use (Nc,Ns) or (u_sed,y_sed,Ns).');
-            end
-            Ns=varargin{end};
-            if ~isscalar(Ns)
-                error('SeMIS:RaggedSampler','ES_SourceV3 requires one common chain length.');
-            end
-            validateattributes(Ns,{'numeric'},{'real','integer','positive','finite'});
-            baystc=obj.BayStc;
-            [mu,L]=GaussianPrior(baystc);
-            if any(mu~=0) || ~isequal(L,eye(baystc.Ndim))
-                error('SeMIS:SourceV3Prior', ...
-                    'The source coordinate-angle kernel requires a standard Gaussian reference in U.');
-            end
-            sedsav=obj.SedSav || nargin<=3;
-            nTry=obj.Ntry;
-            nDim=baystc.Ndim;
-            nFun=baystc.Nfun;
-            if nargin<=3
-                Nc=varargin{1};
-                validateattributes(Nc,{'numeric'},{'scalar','real','integer','positive','finite'});
-                u_sed=randn(nDim,Nc);
-                baystc=baystc.EvlY(u_sed);
-                y_sed=[baystc.EvlLKF;baystc.EvlPDF;baystc.Y];
-                Ncal=baystc.Ncal;
-            else
-                u_sed=varargin{1};
-                y_sed=varargin{2};
-                Nc=size(u_sed,2);
-                if ~isequal(size(u_sed),[nDim,Nc]) || ~isequal(size(y_sed),[nFun,Nc])
-                    error('SeMIS:SamplerLayout','Seed coordinates and records must be two-dimensional arrays with matching columns.');
-                end
-                Ncal=0;
-            end
-
+            [baystc,u_sed,y_sed,Ncal,sedsav,~,Nc,Ns] = obj.prepare(varargin{:});
+            nTry = obj.Ntry;
+            nDim = baystc.Ndim;
+            nFun = baystc.Nfun;
             u=zeros(nDim,Nc,Ns);
             y=zeros(nFun,Nc,Ns);
+            if sedsav && Ns == 1
+                u = u_sed;
+                y = y_sed;
+                return
+            end
             du=randn(nDim,Nc,Ns);
             p=rand(1,Nc,Ns);
 

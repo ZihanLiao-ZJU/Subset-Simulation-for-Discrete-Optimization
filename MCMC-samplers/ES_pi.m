@@ -1,5 +1,9 @@
 classdef ES_pi < ES_2pi
-    % Legacy entry point. Uses the full elliptical slice update inherited
-    % from ES_2pi; coordinate-wise half ellipses are not valid for a general
-    % correlated Gaussian reference. Kept so existing driver choices work.
+    % Historical name for the common-angle slice sampler.
+    methods
+        function obj = ES_pi(model)
+            if nargin < 1, model = []; end
+            obj@ES_2pi(model);
+        end
+    end
 end

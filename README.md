@@ -44,14 +44,13 @@ Here `z` is a discrete design, `f` contains one or more objectives, and `c` cont
 ├── MCMC-samplers/                       % MCMC samplers
 ├── Objective-functions/                 % classical examples and QAPLIB instances
 ├── Support-Fun/                         % discrete mappings and numerical utilities
-├── Operations on Logarithmic values/    % logarithmic arithmetic helpers
 ├── LICENSE
 └── README.md
 ```
 
 ## Quick start
 
-Add this repository and all its subfolders to the MATLAB path. Edit `drive_discrete.m` directly: select `problem`, construct the optimization model, choose `SamplerClass`, and set the scalar `model.Nsam`.
+Add this repository and all its subfolders to the MATLAB path. Edit `drive_discrete.m` directly: select `problem`, construct the optimization model, choose `SamplerClass`, and set `simulation.NumSam` to the number of samples per level.
 
 The default is QAPLIB `nug20`, `SuS_Discrete_Optim`, 512 samples per level and `aCS`. Run the script:
 
@@ -61,9 +60,9 @@ result.solution
 result.metric
 ```
 
-For a multiobjective example, select a provider such as `DiscreteBenchmarks('grid_zdt1','Dimension',20,'Levels',21)`, use the commented `SuS_Multi_Optim` construction, and replace the scalar extraction block with the adjacent Pareto-archive extraction. The script marks both sections to change.
+For a multiobjective example, select `DiscreteBenchmarks('grid_zdt1','Dimension',20,'Levels',21)` and the adjacent `SuS_Multi_Optim` model. The script returns one design per distinct feasible nondominated objective vector.
 
-Available samplers are `aCS`, `CW_aMH`, `CW_SMS`, `ES_2pi`, `ES_pi` and `ES_SourceV3`.
+Choose `aCS`, `CW_aMH`, `HMC` or `ES` in the driver. The original `CW_SMS`, `ES_2pi`, `ES_pi` and `ES_SourceV3` are also available.
 
 ## Built-in examples
 
@@ -88,10 +87,8 @@ objective = @(Z) sum((Z-3).^2,1);
 model = SuS_Discrete_Optim(objective,zeros(20,1),6*ones(20,1), ...
     'Unique',false,'PermutationInvariant',false, ...
     'Mapping','uniform','StopRule','stability');
-model.Nsam = 512;
-sampler = aCS;
-sampler.BayStc = model;
-simulation = SeMCS(sampler);
+simulation = SeMCS(aCS(model));
+simulation.NumSam = 512;
 raw = simulation.RunIte();
 [bestValue,index] = min(raw.intBay.CacheF);
 bestDesign = raw.intBay.CacheZ(:,index);
@@ -103,7 +100,7 @@ An object or struct can instead provide `EvlF(Z)`; the original `EvlOBF(Z)` inte
 
 The cache retains the first evaluation of each design; objectives should be deterministic or use explicitly fixed common random numbers.
 
-The script sets `model.G.p = 0.1` and `simulation.MaxIte = 10000`. The model constructors accept `Patience` (default 5) and `MinimumLevels` (3) when needed. Native stopping monitors the best evaluated scalar objective or the distinct feasible nondominated objective vectors. These rules do not certify global optimality or complete Pareto coverage.
+The model constructors accept `Patience` (default 5) and `MinimumLevels` (3) when needed. Native stopping monitors the best evaluated scalar objective or the distinct feasible nondominated objective vectors. These rules do not certify global optimality or complete Pareto coverage.
 
 ## Outputs
 
@@ -113,7 +110,7 @@ The script sets `model.G.p = 0.1` and `simulation.MaxIte = 10000`. The model con
 | `evaluations` | Newly evaluated discrete designs; cached repeats add no calls |
 | `iterations`, `converged`, `stop_reason` | Sampled levels and native termination information |
 | `archive_solution`, `archive_objectives`, `archive_constraints` | All uniquely evaluated designs and their cached values |
-| `raw` | Sampling history and final ISD |
+| `raw` | Samples `x`, packed values `y`, distribution states `g`, level sizes `Nsze` and `Nsam`, evaluation counts `Ncal`, and the final model `intBay` |
 
 For multiobjective problems, objectives and constraints at one new design count as one joint evaluation. The final archive includes evaluated proposals rejected by MCMC. `raw.x` contains Gaussian coordinates; `raw.intBay.u2ints(U)` maps them to discrete designs. The optimization driver does not perform evidence or failure-probability postprocessing.
 

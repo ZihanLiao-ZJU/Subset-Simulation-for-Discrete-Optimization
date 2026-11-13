@@ -35,9 +35,8 @@ classdef SuS_Discrete_Optim
     %
     %   Usage:
     %       model = SuS_Discrete_Optim(OBJ, xmin, xmax);
-    %       model.Nsam = 150; model.G.p = 0.1;
-    %       sampler = aCS; sampler.BayStc = model;
-    %       simulation = SeMCS(sampler); simulation.MaxIte = 30;
+    %       simulation = SeMCS(aCS(model));
+    %       simulation.NumSam = 150;
     %       raw = simulation.RunIte;
     %
     %   See also SUS_MULTI_OPTIM, SEMCS, DISCRETEMAP.
@@ -50,6 +49,7 @@ classdef SuS_Discrete_Optim
         X                   % last evaluated samples in u-space
         Y                   % [2 x N]: [log_phi; F]
         G                   % intermediate state struct (parameters,p,L,...)
+        Verbose = false
         Nsam = 150          % samples per level (read by SeMCS constructor)
         ThresholdRule = 'hazen'     % 'hazen' (quantile) or 'midpoint'
         Unique = true               % pairwise-distinct integers (subset mode)
@@ -63,8 +63,8 @@ classdef SuS_Discrete_Optim
 
     properties (Dependent)
         FlgCvg
+        CacheC      % unconstrained scalar objectives have zero constraint rows
         Ndim        % alias of Dim (framework protocol name)
-        TF          % dimension metadata for the unified project engine
     end
 
     methods
@@ -144,32 +144,21 @@ classdef SuS_Discrete_Optim
         end
 
         function [u, y, Ncal, obj] = SamGen(obj, N)
-            % Prior sampling in standard-normal space (framework contract).
-            factor=1;
-            if isfield(obj.G,'L'),factor=obj.G.L;
-            elseif isfield(obj.G,'L_pi'),factor=obj.G.L_pi;end
-            if ~isequal(factor,1) && ~isequal(factor,eye(obj.Dim))
-                error('SuS_DiscreteOptim:Reference', ...
-                    'Discrete optimization requires the standard-normal reference.');
+            obj.checkReference();
+            if obj.G.parameters ~= inf
+                error('SuS_DiscreteOptim:InitialSupport','Initial samples require the full Gaussian prior.');
             end
             u = randn(obj.Dim, N);
-            obj = obj.EvlY(u);
-            y = [obj.EvlLKF;obj.EvlPDF;obj.Y];
-            if any(~isfinite(y(1,:))) || any(abs(y(1,:))>1e-10)
-                error('SeMIS:InitialISD','The first optimization ISD must have zero log likelihood.');
+            if nargout > 1
+                obj = obj.EvlY(u);
+                y = [obj.EvlLKF; obj.EvlPDF; obj.Y];
+                Ncal = obj.Ncal;
             end
-            Ncal = obj.Ncal;
         end
 
         function obj = EvlY(obj, u)
             % Map u -> discrete point, score with cache, pack Y = [log_phi; F].
-            factor=1;
-            if isfield(obj.G,'L'),factor=obj.G.L;
-            elseif isfield(obj.G,'L_pi'),factor=obj.G.L_pi;end
-            if ~isequal(factor,1) && ~isequal(factor,eye(obj.Dim))
-                error('SuS_DiscreteOptim:Reference', ...
-                    'Discrete optimization requires the standard-normal reference.');
-            end
+            obj.checkReference();
             if ndims(u) > 2
                 u = reshape(u, obj.Dim, []);
             end
@@ -232,8 +221,6 @@ classdef SuS_Discrete_Optim
         function [y, g, obj, N_cal] = UpdObj(obj, u, y, p)
             if nargin < 4, p = obj.G.p; end
             % Update the level threshold from the current objective values.
-            % The packed sampled y is returned unchanged: the generic
-            % SedSlt/ResRat compares the new ISF against y(1:2,:).
             F = y(4, :);
             F = F(:).';
             u = reshape(u, obj.Dim, []);
@@ -272,7 +259,6 @@ classdef SuS_Discrete_Optim
             g.prev = l;
             obj.G = g;
 
-            g = obj.G; %#ok<NASGU>
             N_cal = 0;
         end
 
@@ -280,43 +266,30 @@ classdef SuS_Discrete_Optim
             d = obj.Dim;
         end
 
-        function target = get.TF(obj)
-            target = struct('Ndim',obj.Dim,'Domain','optimization');
+        function C = get.CacheC(obj)
+            C = zeros(0, size(obj.CacheZ,2));
         end
 
-        function defaults = RunDefaults(~)
-            % Optimization has no Bayesian evidence/CoV stopping target.
-            defaults = struct('FlgCoV',false,'FlgCvgInt',true);
+        function [Z, F, C] = paretoArchive(obj)
+            % The scalar front contains one design attaining the minimum.
+            [F, index] = min(obj.CacheF);
+            Z = obj.CacheZ(:,index);
+            C = zeros(0, numel(index));
         end
 
-        function request = SelectSeeds(obj, context)
-            % Actual binary-event parent selection, with nominal chain rounding.
-            % Parent indices avoid dependence on another toolbox's SedSlt file.
-            y = reshape(context.level.integration.y,obj.Nfun,[]);
-            if obj.G.parameters == inf, pool = 1:size(y,2);
-            else, pool = find(y(4,:) < obj.G.parameters); end
-            n = context.nextBudget;
-            if isempty(pool)
-                parents = zeros(1,0); plan = [];
-            else
+        function [xs, ys] = SedSlt(obj, x, y, n)
+            x = reshape(x, obj.Dim, []);
+            y = reshape(y, obj.Nfun, []);
+            pool = find(y(4,:) < obj.G.parameters);
+            chosen = [];
+            if ~isempty(pool)
                 counts = round(n ./ round(n ./ (1:n)));
-                nc = counts(find(counts<=numel(pool),1,'last'));
-                parents = pool(randperm(numel(pool),nc));
-                plan = struct('chains',nc,'steps',round(n/nc),'keep','all', ...
-                    'budgetMode','nominal','selection','custom');
+                nc = counts(find(counts <= numel(pool), 1, 'last'));
+                chosen = pool(randperm(numel(pool), nc));
             end
-            request = struct('parentIndices',reshape(parents,1,[]), ...
-                'candidateIndices',reshape(pool,1,[]),'selection','custom','plan',plan);
-        end
-
-        function decision = ShouldStop(obj, context, phase)
-            decision = [];
-            % Explicitly disabling intrinsic convergence must remain effective.
-            if ~context.runtimeG.run.flag_isd, return; end
-            stop = strcmp(phase,'after_seeds') && obj.FlgCvg;
-            reason = '';
-            if stop, reason = 'method_complete'; end
-            decision = struct('stop',logical(stop),'converged',logical(stop),'reason',reason);
+            xs = x(:,chosen);
+            ys = y(:,chosen);
+            ys(1,:) = 0;  % All selected points satisfy the new threshold.
         end
 
         function obj = set.Ndim(obj, d)
@@ -392,4 +365,18 @@ classdef SuS_Discrete_Optim
         end
     end
 
+    methods (Access=private)
+        function checkReference(obj)
+            factor = 1;
+            if isfield(obj.G,'L')
+                factor = obj.G.L;
+            elseif isfield(obj.G,'L_pi')
+                factor = obj.G.L_pi;
+            end
+            if ~isequal(factor,1) && ~isequal(factor,eye(obj.Dim))
+                error('SuS_DiscreteOptim:Reference', ...
+                    'Discrete optimization requires the standard-normal reference.');
+            end
+        end
+    end
 end

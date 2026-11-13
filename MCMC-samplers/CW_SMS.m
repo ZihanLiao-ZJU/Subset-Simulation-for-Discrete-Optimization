@@ -1,24 +1,22 @@
-classdef CW_SMS
+classdef CW_SMS < MCMCBase
     % Component-wise ensemble stretch MH. Updates complementary chain groups
     % sequentially, so each proposal partner is fixed during its MH update.
     properties (Constant)
-        SedSav = false
         A = 3
     end
-    properties
-        BayStc
-    end
     methods
-        function obj = CW_SMS(BayStc)
-            if nargin>0, obj.BayStc=BayStc; end
+        function obj = CW_SMS(model)
+            if nargin < 1, model = []; end
+            obj@MCMCBase(model);
         end
-        function [u,y,Ncal,baystc] = SamGen(obj,u_sed,y_sed,Ns)
-            baystc=obj.BayStc;
-            n=baystc.Ndim; Nc=size(u_sed,2);
-            u=zeros(n,Nc,Ns); y=zeros(size(y_sed,1),Nc,Ns); Ncal=0;
-            [~,L]=GaussianPrior(baystc);
+
+        function [u,y,Ncal,baystc] = SamGen(obj,varargin)
+            [baystc,u_sed,y_sed,Ncal,saveSeed,L,Nc,Ns] = obj.prepare(varargin{:});
+            n = baystc.Ndim;
+            u = zeros(n,Nc,Ns);
+            y = zeros(baystc.Nfun,Nc,Ns);
             for k=1:Ns
-                if k==1 && obj.SedSav
+                if k==1 && saveSeed
                     u(:,:,k)=u_sed; y(:,:,k)=y_sed; continue
                 end
                 if Nc==1

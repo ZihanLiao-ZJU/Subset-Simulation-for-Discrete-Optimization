@@ -8,6 +8,7 @@ classdef SuS_Multi_Optim
         Nobj = 0
         Ncst = 0
         Nfun = 3
+        Verbose = false
         Nsam = 500
         Ncal = 0
         X
@@ -22,10 +23,12 @@ classdef SuS_Multi_Optim
         CacheF
         CacheC
     end
+    properties (Constant)
+        StopBeforeSeeds = true
+    end
     properties (Dependent)
         Ndim
         FlgCvg
-        TF
     end
     methods
         function obj = SuS_Multi_Optim(OBJ, xmin, xmax, varargin)
@@ -89,13 +92,15 @@ classdef SuS_Multi_Optim
 
         function [u, y, Ncal, obj] = SamGen(obj, n)
             obj.checkReference();
-            u = randn(obj.Dim, n);
-            obj = obj.EvlY(u);
-            y = [obj.EvlLKF;obj.EvlPDF;obj.Y];
-            if any(~isfinite(y(1,:))) || any(abs(y(1,:))>1e-10)
-                error('SeMIS:InitialISD','The first optimization ISD must have zero log likelihood.');
+            if ~isempty(obj.G.referenceF)
+                error('SuS_MultiOptim:InitialSupport','Initial samples require the full Gaussian prior.');
             end
-            Ncal = obj.Ncal;
+            u = randn(obj.Dim, n);
+            if nargout > 1
+                obj = obj.EvlY(u);
+                y = [obj.EvlLKF; obj.EvlPDF; obj.Y];
+                Ncal = obj.Ncal;
+            end
         end
 
         function Z = u2ints(obj, u)
@@ -150,10 +155,12 @@ classdef SuS_Multi_Optim
             value = obj.Y(1, :);
         end
 
-        function [y, g, obj, Ncal] = UpdObj(obj, ~, y, p)
+        function [y, g, obj, Ncal] = UpdObj(obj, x, y, p)
             if nargin < 4, p = obj.G.p; end
             validateattributes(p, {'numeric'}, {'scalar','>',0,'<',1});
             yflat = reshape(y, obj.Nfun, []);
+            obj.X = reshape(x, obj.Dim, []);
+            obj.Y = yflat(3:end,:);
             F = yflat(4:3+obj.Nobj, :);
             C = yflat(4+obj.Nobj:end, :);
             violation = sum(max(C - obj.G.constraintTolerance, 0), 1);
@@ -204,17 +211,6 @@ classdef SuS_Multi_Optim
             ys(1, :) = 0;
         end
 
-        function request = SelectSeeds(obj, context)
-            % The unified engine needs actual parents and the native chain plan.
-            x = context.level.integration.x; y = context.level.integration.y;
-            [~,~,parents,pool] = obj.SedSlt(x,y,context.nextBudget);
-            nc = numel(parents);
-            plan = struct('chains',nc,'steps',round(context.nextBudget/nc), ...
-                'keep','all','budgetMode','nominal','selection','custom');
-            request = struct('parentIndices',reshape(parents,1,[]), ...
-                'candidateIndices',reshape(pool,1,[]),'selection','custom','plan',plan);
-        end
-
         function [Z, F, C] = paretoArchive(obj)
             feasible = all(obj.CacheC <= obj.G.constraintTolerance, 1);
             Z = obj.CacheZ(:, feasible); F = obj.CacheF(:, feasible); C = obj.CacheC(:, feasible);
@@ -224,12 +220,6 @@ classdef SuS_Multi_Optim
         end
 
         function d = get.Ndim(obj), d = obj.Dim; end
-        function target = get.TF(obj)
-            target = struct('Ndim',obj.Dim,'Domain','optimization');
-        end
-        function defaults = RunDefaults(~)
-            defaults = struct('FlgCoV',false,'FlgCvgInt',true);
-        end
         function yes = get.FlgCvg(obj)
             yes = obj.G.iteration >= obj.G.minimumLevels && ...
                 ~isempty(obj.G.archiveF) && obj.G.stableLevels >= obj.G.patience;

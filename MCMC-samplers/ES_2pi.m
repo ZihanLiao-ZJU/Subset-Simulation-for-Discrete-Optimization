@@ -1,41 +1,22 @@
-classdef ES_2pi
+classdef ES_2pi < MCMCBase
     % Gaussian-reference elliptical slice sampling, one angle per chain.
     % A shared angle is essential when the Gaussian covariance is correlated.
     properties (Constant)
-        SedSav = false
         Ntry = 1000
     end
-    properties
-        BayStc
-    end
     methods
-        function obj = ConfigureISDPolicy(obj,defaults)
-            % SeMCS validates field names and values before this hook. The
-            % slice kernel moves every seed and has no aCS scale, carry or
-            % acceptance-rate adaptation; those policies are inapplicable.
-            if isfield(defaults,'SeedMode') && ~strcmp(defaults.SeedMode,'move')
-                error('SeMIS:SamplerDefaults', ...
-                    'Elliptical slice sampling supports SeedMode=move only.');
-            end
-            if isfield(defaults,'MixingMode') && ~strcmp(defaults.MixingMode,'off')
-                error('SeMIS:SamplerDefaults', ...
-                    'Elliptical slice sampling does not implement aCS mixing diagnostics or score adaptation.');
-            end
+        function obj = ES_2pi(model)
+            if nargin < 1, model = []; end
+            obj@MCMCBase(model);
         end
 
-        function [u,y,Ncal,baystc] = SamGen(obj,u_sed,y_sed,Ns)
-            if ~isscalar(Ns)
-                error('SeMIS:RaggedSampler', ...
-                    'Elliptical slice sampling requires one common chain length.');
-            end
-            validateattributes(Ns,{'numeric'},{'real','integer','positive','finite'});
-            baystc = obj.BayStc;
-            [mu,L] = GaussianPrior(baystc);
-            n = baystc.Ndim; Nc = size(u_sed,2);
-            u = zeros(n,Nc,Ns); y = zeros(size(y_sed,1),Nc,Ns);
-            Ncal=0;
+        function [u,y,Ncal,baystc] = SamGen(obj,varargin)
+            [baystc,u_sed,y_sed,Ncal,saveSeed,L,Nc,Ns] = obj.prepare(varargin{:});
+            n = baystc.Ndim;
+            u = zeros(n,Nc,Ns);
+            y = zeros(baystc.Nfun,Nc,Ns);
             for k=1:Ns
-                if k==1 && obj.SedSav
+                if k==1 && saveSeed
                     u(:,:,k)=u_sed; y(:,:,k)=y_sed; continue
                 end
                 nu=L*randn(n,Nc);
@@ -44,7 +25,7 @@ classdef ES_2pi
                 lo=angle-2*pi; hi=angle;
                 active=1:Nc;
                 for attempt=1:obj.Ntry
-                    proposed=mu+(u_sed(:,active)-mu).*cos(angle(active))+nu(:,active).*sin(angle(active));
+                    proposed=u_sed(:,active).*cos(angle(active))+nu(:,active).*sin(angle(active));
                     baystc=baystc.EvlY(proposed);
                     yc=[baystc.EvlLKF;baystc.EvlPDF;baystc.Y];
                     Ncal=Ncal+baystc.Ncal;

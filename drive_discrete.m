@@ -10,29 +10,16 @@ model = SuS_Discrete_Optim(problem,problem.Xmin,problem.Xmax, ...
 % model = SuS_Multi_Optim(problem,problem.Xmin,problem.Xmax);
 
 %% Sampler and simulation settings
-SamplerClass = @aCS;         % aCS, CW_aMH, CW_SMS, ES_2pi, ES_pi or ES_SourceV3
-model.Nsam = 512;            % Constant samples per level
-model.G.p = 0.1;             % Conditional probability
-sampler = SamplerClass();
-sampler.BayStc = model;
-simulation = SeMCS(sampler);
-simulation.MaxIte = 10000;
-simulation.Verbose = false;
+SamplerClass = @aCS;         % CW_aMH, aCS, HMC or ES
+simulation = SeMCS(SamplerClass(model));
+simulation.NumSam = 512;     % Constant samples per level
 
-%% Run optimization
+%% Run optimization and extract the best designs
 raw = simulation.RunIte();
+[solution,metric,constraints] = raw.intBay.paretoArchive();
 archive_solution = raw.intBay.CacheZ;
 archive_objectives = raw.intBay.CacheF;
-
-%% Extract the best scalar design
-[metric,index] = min(archive_objectives);
-solution = archive_solution(:,index);
-archive_constraints = zeros(0,size(archive_solution,2));
-constraints = zeros(0,size(solution,2));
-
-% For a multiobjective problem, replace the four lines above with:
-% archive_constraints = raw.intBay.CacheC;
-% [solution,metric,constraints] = raw.intBay.paretoArchive();
+archive_constraints = raw.intBay.CacheC;
 
 %% Results
 result = struct('problem',problem.Name,'solution',solution,'metric',metric, ...
